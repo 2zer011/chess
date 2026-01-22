@@ -1,3 +1,8 @@
+// --- GLOBAL ERROR HANDLER ---
+window.addEventListener('error', (e) => {
+    console.error('Error:', e.message);
+});
+
 const BOARD_SIZE = 8;
 let MAX_DEPTH = 4; // Dynamic: 2=Easy, 3=Medium, 4=Hard
 // Default is Hard (4).
@@ -83,15 +88,16 @@ let selectedSquare = null;
 let mode = 'pvc';
 let gameOver = false;
 
-const boardEl = document.getElementById('board');
-const statusEl = document.getElementById('status');
+// Safe DOM element retrieval
+const boardEl = document.getElementById('board') || document.createElement('div');
+const statusEl = document.getElementById('status') || document.createElement('div');
 
 // Chat elements
-const chatPanel = document.getElementById('chat-panel');
-const chatMessages = document.getElementById('chat-messages');
-const chatInput = document.getElementById('chat-input');
-const chatSendBtn = document.getElementById('chat-send-btn');
-const chatToggleBtn = document.getElementById('chat-toggle-btn');
+const chatPanel = document.getElementById('chat-panel') || document.createElement('div');
+const chatMessages = document.getElementById('chat-messages') || document.createElement('div');
+const chatInput = document.getElementById('chat-input') || document.createElement('input');
+const chatSendBtn = document.getElementById('chat-send-btn') || document.createElement('button');
+const chatToggleBtn = document.getElementById('chat-toggle-btn') || document.createElement('button');
 
 function displayChatMessage(message, color = '#eceff4') {
     const msgDiv = document.createElement('div');
@@ -555,16 +561,16 @@ function getValidMoves(bd, r, c) {
 
 // --- UI LOGIC ---
 
-const mainMenu = document.getElementById('main-menu');
-const gameScreen = document.getElementById('game-screen');
-const modal = document.getElementById('game-over-modal');
-const winnerText = document.getElementById('winner-text');
-const reasonText = document.getElementById('reason-text');
-const btnPvC = document.getElementById('btn-pvc');
-const btnPvP = document.getElementById('btn-pvp');
-const backBtn = document.getElementById('back-btn');
-const playAgainBtn = document.getElementById('play-again-btn');
-const menuBtn = document.getElementById('menu-btn');
+const mainMenu = document.getElementById('main-menu') || document.createElement('div');
+const gameScreen = document.getElementById('game-screen') || document.createElement('div');
+const modal = document.getElementById('game-over-modal') || document.createElement('div');
+const winnerText = document.getElementById('winner-text') || document.createElement('h2');
+const reasonText = document.getElementById('reason-text') || document.createElement('p');
+const btnPvC = document.getElementById('btn-pvc') || document.createElement('button');
+const btnPvP = document.getElementById('btn-pvp') || document.createElement('button');
+const backBtn = document.getElementById('back-btn') || document.createElement('button');
+const playAgainBtn = document.getElementById('play-again-btn') || document.createElement('button');
+const menuBtn = document.getElementById('menu-btn') || document.createElement('button');
 
 function showScreen(screen) {
     mainMenu.classList.add('hidden');
@@ -651,15 +657,15 @@ let isHost = false; // Track if this player created the room
 let opponentReady = false; // Track if opponent is ready
 let gameStarted = false; // Track if game has started
 
-const onlineMenu = document.getElementById('online-menu');
-const onlineStatus = document.getElementById('online-status');
-const btnOnline = document.getElementById('btn-online');
-const createRoomBtn = document.getElementById('create-room-btn');
-const joinRoomBtn = document.getElementById('join-room-btn');
-const roomIdInput = document.getElementById('room-id-input');
-const myRoomIdEl = document.getElementById('my-room-id');
-const roomInfo = document.getElementById('room-info');
-const backOnlineBtn = document.getElementById('back-online-btn');
+const onlineMenu = document.getElementById('online-menu') || document.createElement('div');
+const onlineStatus = document.getElementById('online-status') || document.createElement('div');
+const btnOnline = document.getElementById('btn-online') || document.createElement('button');
+const createRoomBtn = document.getElementById('create-room-btn') || document.createElement('button');
+const joinRoomBtn = document.getElementById('join-room-btn') || document.createElement('button');
+const roomIdInput = document.getElementById('room-id-input') || document.createElement('input');
+const myRoomIdEl = document.getElementById('my-room-id') || document.createElement('p');
+const roomInfo = document.getElementById('room-info') || document.createElement('div');
+const backOnlineBtn = document.getElementById('back-online-btn') || document.createElement('button');
 
 btnOnline.onclick = () => {
     showScreen(onlineMenu);
@@ -872,10 +878,7 @@ let timeLimit = 0; // Minutes. 0 = unlimited.
 let timers = { w: 0, b: 0 };
 let userSide = 'w'; // 'w', 'b', or 'random'
 
-const sideSel = document.getElementById('side-sel');
-const timeSel = document.getElementById('time-sel');
-const timerTopEl = document.getElementById('timer-top');
-const timerBotEl = document.getElementById('timer-bot');
+// Note: sideSel, timeSel, timerTopEl, timerBotEl declared above in SETTINGS UI section
 
 function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
@@ -984,7 +987,7 @@ const PIECE_SVGS = {
 };
 
 let pieceTheme = 'alpha'; // 'unicode' or 'alpha'
-const pieceSel = document.getElementById('piece-sel');
+// Note: pieceSel declared above in SETTINGS UI section
 
 // Update Render Board for SVGs and Unicode pieces
 renderBoard = function () {
@@ -1037,11 +1040,16 @@ renderBoard = function () {
 
 
 // --- SETTINGS UI ---
-const settingsModal = document.getElementById('settings-modal');
-const btnSettings = document.getElementById('btn-settings');
-const closeSettingsBtn = document.getElementById('close-settings-btn');
-const difficultySel = document.getElementById('difficulty-sel');
-const themeSel = document.getElementById('theme-sel');
+const settingsModal = document.getElementById('settings-modal') || document.createElement('div');
+const btnSettings = document.getElementById('btn-settings') || document.createElement('button');
+const closeSettingsBtn = document.getElementById('close-settings-btn') || document.createElement('button');
+const difficultySel = document.getElementById('difficulty-sel') || document.createElement('select');
+const themeSel = document.getElementById('theme-sel') || document.createElement('select');
+const pieceSel = document.getElementById('piece-sel') || document.createElement('select');
+const sideSel = document.getElementById('side-sel') || document.createElement('select');
+const timeSel = document.getElementById('time-sel') || document.createElement('select');
+const timerTopEl = document.getElementById('timer-top') || document.createElement('div');
+const timerBotEl = document.getElementById('timer-bot') || document.createElement('div');
 
 btnSettings.onclick = () => {
     mainMenu.classList.add('hidden');
@@ -1064,6 +1072,20 @@ function applyTheme(theme) {
     document.body.className = `theme-${theme}`;
 }
 
-// Init
-applyTheme('green'); // Default
-showScreen(mainMenu);
+// Init - Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Game initialized - v1.0.0');
+    applyTheme('green');
+    showScreen(mainMenu);
+});
+
+// Fallback if DOMContentLoaded already fired
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        applyTheme('green');
+        showScreen(mainMenu);
+    });
+} else {
+    applyTheme('green');
+    showScreen(mainMenu);
+}

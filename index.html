@@ -160,9 +160,14 @@
     <script src="game.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+            navigator.serviceWorker.register('sw.js').catch(e => console.log('SW error:', e));
         }
     </script>
+    
+    <!-- Version Footer -->
+    <div style="position: fixed; bottom: 5px; right: 10px; font-size: 0.7rem; color: #666; z-index: 1;">
+        v1.0.0
+    </div>
 </body>
 
 </html>
