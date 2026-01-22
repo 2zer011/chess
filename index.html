@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cờ Vua Đơn Giản</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="main-menu" class="screen">
+        <h1 class="title-large">CỜ VUA</h1>
+        <div class="menu-buttons">
+            <button id="btn-pvc" class="btn-large">Đấu với Máy</button>
+            <button id="btn-pvp" class="btn-large">2 Người Chơi</button>
+            <button id="btn-online" class="btn-large" style="background: #bf616a; border-color: #d08770;">Chơi Online
+                (Beta)</button>
+            <button id="btn-settings" class="btn-large" style="background: #5e81ac; border-color: #81a1c1;">Cài
+                Đặt</button>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">Cài Đặt</h2>
+
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="color: #fff; font-size: 1.2rem;">Độ Khó (ELO):</label>
+                <select id="difficulty-sel" style="width: 100%; margin-top: 5px; padding: 10px;">
+                    <option value="2">Dễ (Newbie)</option>
+                    <option value="3">Vừa (Amateur)</option>
+                    <option value="4" selected>Khó (Pro)</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="color: #fff; font-size: 1.2rem;">Giao Diện:</label>
+                <select id="theme-sel" style="width: 100%; margin-top: 5px; padding: 10px;">
+                    <option value="green">Cỏ (Nature)</option>
+                    <option value="alien">Ngoài Hành Tinh (Alien)</option>
+                    <option value="wave">Biển Cả (Wave)</option>
+                    <option value="astra">Vũ Trụ (Astra)</option>
+                    <option value="sky">Bầu Trời (Sky)</option>
+                    <option value="fire">Lửa (Fire)</option>
+                    <option value="ice">Băng (Ice)</option>
+                    <option value="earth">Đất (Earth)</option>
+                    <option value="midnight">Đêm (Midnight)</option>
+                    <option value="candy">Kẹo Ngọt (Candy)</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="color: #fff; font-size: 1.2rem;">Chọn Bên (Đấu Máy):</label>
+                <select id="side-sel" style="width: 100%; margin-top: 5px; padding: 10px;">
+                    <option value="w">Cầm Trắng (Đi Trước)</option>
+                    <option value="b">Cầm Đen (Đi Sau)</option>
+                    <option value="random">Ngẫu Nhiên</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="color: #fff; font-size: 1.2rem;">Thời Gian (Phút):</label>
+                <select id="time-sel" style="width: 100%; margin-top: 5px; padding: 10px;">
+                    <option value="0">Không giới hạn</option>
+                    <option value="3">3 Phút (Siêu Chớp)</option>
+                    <option value="5">5 Phút (Chớp)</option>
+                    <option value="10">10 Phút (Nhanh)</option>
+                    <option value="30">30 Phút (Cổ Điển)</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 30px; text-align: left;">
+                <label style="color: #fff; font-size: 1.2rem;">Kiểu Quân Cờ:</label>
+                <select id="piece-sel" style="width: 100%; margin-top: 5px; padding: 10px;">
+                    <option value="unicode">Cổ Điển (Unicode)</option>
+                    <option value="alpha" selected>Hiện Đại (Vector)</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button id="close-settings-btn" class="btn-primary">Lưu & Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ONLINE MENU -->
+    <div id="online-menu" class="screen hidden">
+        <h1 class="title-large">CHƠI ONLINE</h1>
+        <div class="menu-buttons" style="max-width: 400px;">
+            <div class="status-box" id="online-status" style="margin-bottom: 20px;">Đang kết nối server...</div>
+
+            <button id="create-room-btn" class="btn-large">Tạo Phòng (Host)</button>
+
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <input type="text" id="room-id-input" placeholder="Nhập ID phòng..."
+                    style="flex: 1; padding: 15px; border-radius: 8px; border: none;">
+                <button id="join-room-btn" class="btn-large" style="padding: 15px;">Vào</button>
+            </div>
+
+            <div id="room-info" class="hidden"
+                style="margin-top: 20px; background: #3b4252; padding: 15px; border-radius: 8px;">
+                <p>ID Phòng của bạn:</p>
+                <p id="my-room-id"
+                    style="font-size: 2rem; color: #ffd700; font-weight: bold; cursor: pointer; user-select: text;">...
+                </p>
+                <p style="font-size: 0.8rem; color: #aaa;">Copy ID này gửi cho bạn bè</p>
+            </div>
+
+            <button id="back-online-btn" class="btn-secondary" style="margin-top: 20px;">Quay Lại</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="hidden">
+        <!-- Header -->
+        <div class="header-row">
+            <button id="back-btn" class="icon-btn">⬅</button>
+            <h1 class="title small">CỜ VUA</h1>
+        </div>
+
+        <div style="display: flex; width: 100%; justify-content: space-between; color: #aaa; margin-bottom: 5px;">
+            <div id="timer-top">--:--</div>
+            <div id="timer-bot">--:--</div>
+        </div>
+
+        <!-- Status -->
+        <div id="status" class="status-box">Lượt của Trắng</div>
+
+        <!-- Board -->
+        <div id="board" class="chess-board"></div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="winner-text">TRẮNG THẮNG!</h2>
+            <p id="reason-text">bằng Chiếu bí</p>
+            <div class="modal-actions">
+                <button id="play-again-btn" class="btn-primary">Chơi Lại</button>
+                <button id="menu-btn" class="btn-secondary">Menu Chính</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="game.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+
+</html>

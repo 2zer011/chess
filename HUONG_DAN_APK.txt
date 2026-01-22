@@ -1,0 +1,15 @@
+HƯỚNG DẪN TẠO APP CHO ĐIỆN THOẠI (ANDROID/IOS)
+
+Cách 1: Cài đặt trực tiếp (PWA) - Nhanh nhất
+1. Đẩy 3 file (index.html, style.css, game.js) lên một host miễn phí (ví dụ GitHub Pages hoặc Vercel).
+2. Mở link trên điện thoại bằng Chrome (Android) hoặc Safari (iPhone).
+3. Ấn Menu -> "Thêm vào màn hình chính" (Add to Home Screen).
+4. Game sẽ hiện như một App bình thường, full màn hình, không có thanh địa chỉ.
+
+Cách 2: Tạo file .APK (Android)
+1. Truy cập trang: https://website2apk.com/ hoặc https://www.appilix.com/ (miễn phí).
+2. Nhập link trang web của bạn (sau khi đã up lên host).
+3. Tải file .apk về và cài đặt.
+
+Cách 3: Chơi Offline
+Vì game này được viết bằng HTML/JS thuần, bạn chỉ cần copy folder game vào điện thoại và mở file index.html là chơi được ngay!

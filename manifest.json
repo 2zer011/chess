@@ -1,0 +1,16 @@
+{
+  "name": "Cờ Vua Vui",
+  "short_name": "ChessVui",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#2c2f33",
+  "theme_color": "#2c2f33",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3069/3069186.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
