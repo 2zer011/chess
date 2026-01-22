@@ -86,6 +86,45 @@ let gameOver = false;
 const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
 
+// Chat elements
+const chatPanel = document.getElementById('chat-panel');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const chatSendBtn = document.getElementById('chat-send-btn');
+const chatToggleBtn = document.getElementById('chat-toggle-btn');
+
+function displayChatMessage(message, color = '#eceff4') {
+    const msgDiv = document.createElement('div');
+    msgDiv.style.color = color;
+    msgDiv.style.marginBottom = '8px';
+    msgDiv.style.wordWrap = 'break-word';
+    msgDiv.textContent = message;
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to bottom
+}
+
+function sendChatMessage() {
+    const msg = chatInput.value.trim();
+    if (!msg) return;
+    
+    if (conn && conn.open) {
+        conn.send({ type: 'chat', message: msg });
+        displayChatMessage(`Tôi: ${msg}`, '#a3be8c'); // Display own message
+    }
+    chatInput.value = '';
+}
+
+// Chat event listeners
+if (chatSendBtn) chatSendBtn.onclick = sendChatMessage;
+if (chatInput) chatInput.onkeypress = (e) => {
+    if (e.key === 'Enter') sendChatMessage();
+};
+
+if (chatToggleBtn) {
+    chatToggleBtn.onclick = () => {
+        chatPanel.classList.toggle('hidden');
+    };
+}
 
 function initGame() {
     board = []; // 8x8
@@ -248,41 +287,7 @@ function onSquareClick(r, c) {
     }
 }
 
-// Override render for legal move hints
-function renderBoard() {
-    boardEl.innerHTML = '';
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            const sq = document.createElement('div');
-            const isWhiteSq = (r + c) % 2 === 0;
-            sq.className = `square ${isWhiteSq ? 'white' : 'black'}`;
-            if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) sq.classList.add('selected');
 
-            // Highlight Legal Moves
-            if (selectedSquare) {
-                const moves = getLegalMoves(board, selectedSquare.r, selectedSquare.c);
-                if (moves.find(m => m.r === r && m.c === c)) {
-                    const hint = document.createElement('div');
-                    hint.className = board[r][c] ? 'capture-hint' : 'move-hint';
-                    sq.appendChild(hint);
-                }
-            }
-
-            const piece = board[r][c];
-            if (piece) {
-                const span = document.createElement('span');
-                span.className = 'piece';
-                span.textContent = PIECES[piece.color][piece.type];
-                span.style.color = piece.color === 'w' ? 'white' : 'black';
-                if (piece.color === 'w') span.style.textShadow = '0 0 2px black';
-                sq.appendChild(span);
-            }
-
-            sq.onclick = () => onSquareClick(r, c);
-            boardEl.appendChild(sq);
-        }
-    }
-}
 
 // Updated Game Over handling in execution
 function checkGameOver() {
@@ -301,14 +306,25 @@ function checkGameOver() {
     if (opponentMoves.length === 0) {
         gameOver = true;
         renderBoard(); // Render final state
+        
+        let winnerText, reasonText;
         if (inCheck) {
             const winner = turn === 'w' ? 'Black' : 'White';
+            winnerText = winner;
+            reasonText = "Bằng chiếu bí (Checkmate)";
             statusEl.textContent = `CHIẾU BÍ! ${winner === 'White' ? 'Trắng' : 'Đen'} Thắng!`;
-            setTimeout(() => showGameOver(winner, "Bằng chiếu bí (Checkmate)"), 500);
         } else {
+            winnerText = 'Draw';
+            reasonText = "Hòa cờ (Stalemate) - Hết nước đi";
             statusEl.textContent = "HÒA CỜ (Stalemate)!";
-            setTimeout(() => showGameOver('Draw', "Hòa cờ (Stalemate) - Hết nước đi"), 500);
         }
+        
+        // Send game over to opponent if online
+        if (mode === 'p2p' && conn && conn.open) {
+            conn.send({ type: 'game_over', winner: winnerText, reason: reasonText });
+        }
+        
+        setTimeout(() => showGameOver(winnerText, reasonText), 500);
         return true;
     }
     return false;
@@ -350,8 +366,10 @@ function executeMoveOnBoard(bd, from, to) {
     bd[to.r][to.c] = piece;
     bd[from.r][from.c] = null;
 
-    // Pawn Promote
-    if (piece.type === 'p' && (to.r === 0 || to.r === 7)) piece.type = 'q';
+    // Pawn Promote to Queen (can be enhanced to ask user later)
+    if (piece.type === 'p' && (to.r === 0 || to.r === 7)) {
+        piece.type = 'q';
+    }
     piece.hasMoved = true;
 }
 
@@ -571,7 +589,25 @@ btnPvC.onclick = () => startGame('pvc');
 btnPvP.onclick = () => startGame('pvp');
 
 backBtn.onclick = () => {
-    gameOver = true; // Stop game loop
+    gameOver = true;
+    if (timerInterval) clearInterval(timerInterval);
+    selectedSquare = null;
+    
+    if (mode === 'p2p') {
+        if (conn) conn.close();
+        if (peer) peer.destroy();
+        peer = null;
+        conn = null;
+        gameStarted = false;
+        opponentReady = false;
+        isHost = false;
+        chatToggleBtn.style.display = 'none';
+        chatPanel.classList.add('hidden');
+        chatMessages.innerHTML = '';
+    }
+    
+    mode = 'pvc';
+    boardEl.style.transform = 'none';
     showScreen(mainMenu);
 };
 
@@ -612,6 +648,8 @@ let peer = null;
 let conn = null;
 let myColor = 'w'; // 'w' (Host) or 'b' (Joiner)
 let isHost = false; // Track if this player created the room
+let opponentReady = false; // Track if opponent is ready
+let gameStarted = false; // Track if game has started
 
 const onlineMenu = document.getElementById('online-menu');
 const onlineStatus = document.getElementById('online-status');
@@ -631,6 +669,13 @@ btnOnline.onclick = () => {
 backOnlineBtn.onclick = () => {
     if (peer) peer.destroy();
     peer = null;
+    conn = null;
+    gameStarted = false;
+    opponentReady = false;
+    isHost = false;
+    chatToggleBtn.style.display = 'none';
+    chatPanel.classList.add('hidden');
+    chatMessages.innerHTML = '';
     showScreen(mainMenu);
 };
 
@@ -648,8 +693,16 @@ function initOnline() {
         // Host received connection
         conn = c;
         setupConnection();
-        alert("Người chơi khác đã tham gia!");
-        startGameOnline('w');
+        displayChatMessage("⚡ Người chơi khác đã tham gia!", '#ffd700');
+        onlineStatus.textContent = "Khởi động trò chơi...";
+        
+        // Send ready signal to opponent after small delay
+        setTimeout(() => {
+            conn.send({ type: 'ready' });
+            if (!gameStarted) {
+                startGameOnline('w');
+            }
+        }, 500);
     });
 
     peer.on('error', (err) => {
@@ -663,7 +716,17 @@ createRoomBtn.onclick = () => {
     roomInfo.classList.remove('hidden');
     myRoomIdEl.textContent = peer.id;
     onlineStatus.textContent = "Đang chờ người chơi khác...";
-    isHost = true; // Mark this player as host
+    isHost = true;
+    chatToggleBtn.style.display = 'inline-block';
+    chatMessages.innerHTML = '';
+    displayChatMessage("Phòng chơi được tạo. Chờ người chơi khác...", '#aaa');
+    
+    // Allow copy ID
+    myRoomIdEl.onclick = () => {
+        navigator.clipboard.writeText(peer.id).then(() => {
+            alert("ID phòng đã copy!");
+        });
+    };
 };
 
 joinRoomBtn.onclick = () => {
@@ -678,22 +741,40 @@ joinRoomBtn.onclick = () => {
 
 function setupConnection() {
     conn.on('open', () => {
-        onlineStatus.textContent = "Đã kết nối!";
-        if (conn.metadata && conn.metadata.type === 'game_start') {
-            // Handled externally if needed
-        // If joiner (not host), start game as Black after connection opens
-        if (!isHost) {
-            startGameOnline('b');
-        }
+        onlineStatus.textContent = "Đã kết nối! Chờ khởi động...";
+        onlineStatus.style.color = "#a3be8c";
+        
+        // Send ready signal to opponent
+        conn.send({ type: 'ready' });
+        
+        // Show chat button and clear messages
+        chatToggleBtn.style.display = 'inline-block';
+        chatMessages.innerHTML = '';
+        displayChatMessage("✓ Kết nối thành công! Chơi game đang khởi động...", '#a3be8c');
     });
 
     conn.on('data', (data) => {
         handleNetworkData(data);
-    });   startGameOnline('b');
-    }
+    });
+
+    conn.on('close', () => {
+        onlineStatus.textContent = "Mất kết nối!";
+        onlineStatus.style.color = "#bf616a";
+        chatToggleBtn.style.display = 'none';
+        displayChatMessage("❌ Mất kết nối với bạn!", '#bf616a');
+        gameOver = true; // Stop current game if in progress
+        setTimeout(() => {
+            if (confirm("Mất kết nối. Quay lại menu?")) {
+                backBtn.click();
+            }
+        }, 1000);
+    });
 }
 
 function startGameOnline(color) {
+    if (gameStarted) return; // Prevent starting multiple times
+    gameStarted = true;
+    
     myColor = color;
     mode = 'p2p';
     showScreen(gameScreen);
@@ -701,8 +782,6 @@ function startGameOnline(color) {
     // Rotate board if Black
     if (myColor === 'b') {
         boardEl.style.transform = 'rotate(180deg)';
-        // Squares are rotated in CSS individually? No, need to rotate pieces back?
-        // Let's rely on CSS class
         document.querySelectorAll('.piece').forEach(p => p.style.transform = 'rotate(180deg)');
     } else {
         boardEl.style.transform = 'none';
@@ -710,13 +789,32 @@ function startGameOnline(color) {
 }
 
 function handleNetworkData(data) {
-    if (data.type === 'move') {
+    if (data.type === 'ready') {
+        opponentReady = true;
+        // If host and opponent is ready, start game
+        if (isHost && opponentReady && !gameStarted) {
+            onlineStatus.textContent = "Khởi động trò chơi...";
+            conn.send({ type: 'game_start' });
+            setTimeout(() => startGameOnline('w'), 500);
+        }
+    } else if (data.type === 'game_start') {
+        // Joiner receives game start signal
+        if (!isHost && !gameStarted) {
+            setTimeout(() => startGameOnline('b'), 500);
+        }
+    } else if (data.type === 'move') {
         executeMoveOnBoard(board, data.from, data.to);
         playSound('move');
         turn = turn === 'w' ? 'b' : 'w';
         updateStatus();
         renderBoard();
         checkGameOver();
+    } else if (data.type === 'game_over') {
+        // Opponent has ended the game
+        gameOver = true;
+        setTimeout(() => showGameOver(data.winner, data.reason), 500);
+    } else if (data.type === 'chat') {
+        displayChatMessage(`Bạn: ${data.message}`, '#88c0d0');
     }
 }
 
@@ -749,9 +847,15 @@ function executeMoveMain(from, to) {
     // AI Logic (Only if PvC)
     if (mode === 'pvc' && turn === 'b' && !gameOver) {
         setTimeout(() => {
-            const bestMove = getBestMove(board, 'b', MAX_DEPTH);
-            if (bestMove) {
-                executeMoveMain(bestMove.from, bestMove.to);
+            try {
+                const bestMove = getBestMove(board, 'b', MAX_DEPTH);
+                if (bestMove) {
+                    executeMoveMain(bestMove.from, bestMove.to);
+                } else {
+                    console.error("AI has no moves but game should have ended");
+                }
+            } catch (e) {
+                console.error("AI error:", e);
             }
         }, 100);
     }
@@ -882,8 +986,7 @@ const PIECE_SVGS = {
 let pieceTheme = 'alpha'; // 'unicode' or 'alpha'
 const pieceSel = document.getElementById('piece-sel');
 
-// Update Render Board for SVGs
-// Re-assigning _originalRender was messy, let's redefine renderBoard cleanly
+// Update Render Board for SVGs and Unicode pieces
 renderBoard = function () {
     boardEl.innerHTML = '';
     for (let r = 0; r < BOARD_SIZE; r++) {
@@ -909,10 +1012,10 @@ renderBoard = function () {
                     const img = document.createElement('img');
                     img.src = PIECE_SVGS[piece.color][piece.type];
                     img.className = 'piece piece-img';
+                    img.onerror = () => { console.warn('Failed to load SVG:', img.src); };
                     // Rotate if P2P Black
                     if (mode === 'p2p' && myColor === 'b') img.style.transform = 'rotate(180deg)';
-                    else if (mode === 'pvc' && userSide === 'b') img.style.transform = 'rotate(180deg)'; // Fix PVC Rotation too
-
+                    else if (mode === 'pvc' && userSide === 'b') img.style.transform = 'rotate(180deg)';
                     sq.appendChild(img);
                 } else {
                     const span = document.createElement('span');
@@ -920,10 +1023,8 @@ renderBoard = function () {
                     span.textContent = PIECES[piece.color][piece.type];
                     span.style.color = piece.color === 'w' ? 'white' : 'black';
                     if (piece.color === 'w') span.style.textShadow = '0 0 2px black';
-
                     if (mode === 'p2p' && myColor === 'b') span.style.transform = 'rotate(180deg)';
                     else if (mode === 'pvc' && userSide === 'b') span.style.transform = 'rotate(180deg)';
-
                     sq.appendChild(span);
                 }
             }

@@ -1,0 +1,29 @@
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node (nếu sau này cần)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build (nếu sau này dùng build tools)
+dist/
+build/
+.next/
+
+# Environment
+.env
+.env.local
