@@ -611,6 +611,7 @@ function playSound(event) {
 let peer = null;
 let conn = null;
 let myColor = 'w'; // 'w' (Host) or 'b' (Joiner)
+let isHost = false; // Track if this player created the room
 
 const onlineMenu = document.getElementById('online-menu');
 const onlineStatus = document.getElementById('online-status');
@@ -662,6 +663,7 @@ createRoomBtn.onclick = () => {
     roomInfo.classList.remove('hidden');
     myRoomIdEl.textContent = peer.id;
     onlineStatus.textContent = "Đang chờ người chơi khác...";
+    isHost = true; // Mark this player as host
 };
 
 joinRoomBtn.onclick = () => {
@@ -670,6 +672,7 @@ joinRoomBtn.onclick = () => {
     if (!peer || peer.disconnected) return alert("Chưa kết nối máy chủ Peer!");
 
     conn = peer.connect(id);
+    isHost = false; // Mark this player as joiner
     setupConnection();
 };
 
@@ -678,16 +681,15 @@ function setupConnection() {
         onlineStatus.textContent = "Đã kết nối!";
         if (conn.metadata && conn.metadata.type === 'game_start') {
             // Handled externally if needed
+        // If joiner (not host), start game as Black after connection opens
+        if (!isHost) {
+            startGameOnline('b');
         }
     });
 
     conn.on('data', (data) => {
         handleNetworkData(data);
-    });
-
-    // If I initiated connection (Joiner), I am Black
-    if (conn.peer === roomIdInput.value.trim()) {
-        startGameOnline('b');
+    });   startGameOnline('b');
     }
 }
 
