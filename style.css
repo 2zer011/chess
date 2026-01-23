@@ -1,333 +1,390 @@
+/* Existing Styles */
 :root {
     --bg-color: #121212;
     --card-bg: #1e1e1e;
-    --text-color: #e0e0e0;
-    --accent-color: #81b64c;
-    --accent-hover: #a3d160;
-    --secondary-bg: #2d2d2d;
-    --timer-bg: #262421;
-    --border-radius: 8px;
-    --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    --font-main: 'Inter', sans-serif;
+    --text-color: #ffffff;
+    --accent-color: #4CAF50;
+    --highlight-color: #ff9800;
+    --border-color: #333;
 }
 
 body {
+    font-family: 'Inter', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
-    font-family: var(--font-main);
     margin: 0;
-    padding: 0;
     display: flex;
     justify-content: center;
-    min-height: 100vh;
     align-items: center;
+    min-height: 100vh;
 }
 
 .app-container {
-    width: 100%;
+    width: 95%;
     max-width: 1200px;
-    padding: 20px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 20px;
 }
 
 header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 20px;
-    font-weight: 700;
-    background: linear-gradient(45deg, #ffffff, #81b64c);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 2px 10px rgba(129, 182, 76, 0.3);
+    text-align: center;
+    color: var(--accent-color);
+    margin-bottom: 10px;
 }
 
 .game-area {
     display: flex;
-    flex-direction: row;
-    gap: 40px;
-    width: 100%;
+    gap: 20px;
+    flex-wrap: wrap;
+    /* Responsive */
+}
+
+/* Board Section */
+.board-wrapper {
+    display: flex;
+    flex: 2;
+    gap: 10px;
+    min-width: 320px;
     justify-content: center;
-    align-items: flex-start;
+}
+
+.win-rate-bar {
+    width: 25px;
+    background: #333;
+    /* Black's win prob */
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column-reverse;
+    /* Height will be handled by container usually, but lets set a fixed aspect or 100% of parent */
+    border: 1px solid #555;
+}
+
+.win-rate-fill {
+    width: 100%;
+    background: linear-gradient(to top, #eee, #ddd);
+    /* White's win prob */
+    transition: height 0.8s ease-in-out;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
 .board-container {
+    /* flex: 2; removed flex here to respect wrapper */
     width: 100%;
     max-width: 600px;
-    background: transparent;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    align-items: center;
+    position: relative;
+    /* For overlays */
+    touch-action: none;
+    /* Mobile Fix: Prevent scrolling while touching board */
 }
 
-/* Timer & Player Info */
+/* Move Classification Badge */
+.move-badge {
+    position: absolute;
+    top: 40%;
+    left: 85%;
+    /* Chess.com style: To the right of the board usually, or overlay */
+    transform: translate(-50%, -50%);
+    background: rgba(30, 30, 30, 0.95);
+    padding: 10px 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 100px;
+}
+
+.move-badge.show {
+    opacity: 1;
+    transform: translate(-50%, -60%);
+    animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes bounceIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%) scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -60%) scale(1);
+    }
+}
+
+.badge-icon {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin-bottom: 5px;
+    color: white;
+}
+
+.badge-text {
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    color: #eee;
+}
+
+/* Badge Variations (Chess.com style) */
+/* Brilliant !! - Teal */
+.badge-brilliant .badge-icon {
+    background: linear-gradient(135deg, #1bada6, #26c2a3);
+    box-shadow: 0 0 15px #26c2a3;
+}
+
+.badge-brilliant .badge-text {
+    color: #26c2a3;
+    text-shadow: 0 0 5px #26c2a3;
+}
+
+/* Great ! (or Star) - Blue */
+.badge-great .badge-icon {
+    background: linear-gradient(135deg, #4b7db0, #5c8bb0);
+}
+
+.badge-great .badge-text {
+    color: #5c8bb0;
+}
+
+/* Best (Check) - Green */
+.badge-best .badge-icon {
+    background: linear-gradient(135deg, #7fa650, #96bc4b);
+}
+
+.badge-best .badge-text {
+    color: #96bc4b;
+}
+
+/* Good - Light Green */
+.badge-good .badge-icon {
+    background: #81b64c;
+    opacity: 0.9;
+}
+
+.badge-good .badge-text {
+    color: #81b64c;
+}
+
+/* Inaccuracy ? - Yellow */
+.badge-inaccuracy .badge-icon {
+    background: linear-gradient(135deg, #f0c15c, #ffe082);
+    color: #333;
+}
+
+.badge-inaccuracy .badge-text {
+    color: #f0c15c;
+}
+
+/* Mistake ? - Orange */
+.badge-mistake .badge-icon {
+    background: linear-gradient(135deg, #e6912c, #ffb74d);
+}
+
+.badge-mistake .badge-text {
+    color: #e6912c;
+}
+
+/* Blunder ?? - Red */
+.badge-blunder .badge-icon {
+    background: linear-gradient(135deg, #cc3333, #fa412d);
+    box-shadow: 0 0 15px #fa412d;
+}
+
+.badge-blunder .badge-text {
+    color: #fa412d;
+}
+
+
 .player-info {
+    width: 100%;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 5px 10px;
-    background-color: transparent;
-}
-
-.player-name {
+    padding: 10px;
     font-weight: 600;
-    color: #ccc;
-    font-size: 1.1rem;
 }
 
 .timer {
-    background-color: var(--timer-bg);
-    padding: 8px 16px;
-    border-radius: 4px;
+    background: #333;
+    padding: 5px 15px;
+    border-radius: 5px;
     font-family: monospace;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #fff;
-    min-width: 100px;
-    text-align: center;
-    border: 2px solid transparent;
-    /* reserve space for active border */
+    font-size: 1.2rem;
 }
 
 .timer.active {
-    background-color: #fff;
-    color: #000;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    background: var(--accent-color);
+    color: white;
 }
 
 .timer.low-time {
-    background-color: #d32f2f;
-    color: #fff;
-    animation: pulse 1s infinite;
+    background: #f44336;
+    /* Red */
 }
 
-@keyframes pulse {
-    0% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.8;
-    }
-
-    100% {
-        opacity: 1;
-    }
-}
-
-/* Chessboard Overrides */
-.clearfix-7da63 {
-    border: none !important;
-}
-
-.board-b72b1 {
-    border: none !important;
-    border-radius: 4px;
-    box-shadow: var(--shadow);
-}
-
-.white-1e1d7 {
-    background-color: #ebecd0;
-    color: #b58863;
-}
-
-.black-3c85d {
-    background-color: #739552 !important;
-    color: #f0d9b5;
-}
-
-/* Sidebar */
+/* Sidebar Section */
 .sidebar {
+    flex: 1;
+    min-width: 250px;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    width: 100%;
-    max-width: 350px;
 }
 
 .card {
-    background-color: var(--card-bg);
-    padding: 24px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    border: 1px solid #333;
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .status-card h2 {
     margin-top: 0;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
     font-size: 1.2rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 1px;
 }
 
 #status {
-    font-size: 1.5rem;
-    font-weight: 600;
-    /* Increased weight */
+    font-size: 1.1rem;
     margin-bottom: 10px;
-    color: #fff;
+    color: var(--highlight-color);
 }
 
-#pgn {
-    font-family: monospace;
-    color: #aaa;
-    font-size: 0.9rem;
-    max-height: 100px;
-    overflow-y: auto;
-    word-break: break-all;
+.evaluation-box {
+    margin: 10px 0;
+    padding: 8px;
+    background: #2a2a2a;
+    border-left: 4px solid var(--accent-color);
+    font-weight: bold;
 }
 
-.btn {
-    display: block;
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-bottom: 10px;
-}
-
-.btn-primary {
-    background-color: var(--accent-color);
-    color: #1e2b0e;
-}
-
-.btn-primary:hover {
-    background-color: var(--accent-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(129, 182, 76, 0.4);
-}
-
-.btn-secondary {
-    background-color: var(--secondary-bg);
-    color: var(--text-color);
-}
-
-.btn-secondary:hover {
-    background-color: #3e3e3e;
-    transform: translateY(-2px);
-}
-
-.btn-large {
-    font-size: 1.2rem;
-    padding: 16px;
-    margin-top: 20px;
-}
-
-.difficulty {
-    margin-top: 15px;
-    text-align: center;
-    color: #888;
-    font-size: 0.9rem;
-}
-
-.difficulty strong {
-    color: var(--accent-color);
-}
-
-/* Modal Styles */
+/* Modal */
 .modal {
-    display: flex;
-    /* Default hidden? No, we want it flex but triggered by JS. Actually we'll toggle display style */
+    display: none;
+    /* Hidden by default */
     position: fixed;
-    z-index: 1000;
+    z-index: 100;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(5px);
+    background-color: rgba(0, 0, 0, 0.8);
     justify-content: center;
     align-items: center;
 }
 
 .modal-content {
     background-color: var(--card-bg);
-    padding: 40px;
-    border-radius: 16px;
+    padding: 30px;
+    border-radius: 10px;
     width: 90%;
-    max-width: 450px;
-    border: 1px solid #444;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    max-width: 400px;
     text-align: center;
-}
-
-.modal-content h2 {
-    margin-top: 0;
-    color: #fff;
-    margin-bottom: 30px;
-    font-size: 1.8rem;
+    border: 1px solid var(--border-color);
 }
 
 .form-group {
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     text-align: left;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 10px;
-    color: #aaa;
+    margin-bottom: 8px;
     font-weight: 600;
+}
+
+select,
+.btn-group {
+    width: 100%;
 }
 
 select {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    background: #333;
+    color: white;
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: opacity 0.2s;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    color: white;
     width: 100%;
-    padding: 12px;
-    background-color: #333;
-    border: 1px solid #555;
-    color: #fff;
-    border-radius: 6px;
-    font-size: 1rem;
-    outline: none;
 }
 
-select:focus {
-    border-color: var(--accent-color);
-}
-
-/* Button Group (PvP / PvE) */
-.btn-group {
-    display: flex;
-    gap: 10px;
+.btn-secondary {
+    background-color: #555;
+    color: white;
+    width: 100%;
+    margin-top: 10px;
 }
 
 .btn-option {
-    flex: 1;
-    padding: 12px;
-    background-color: #333;
-    border: 1px solid #444;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    background: transparent;
     color: #aaa;
-    border-radius: 6px;
     cursor: pointer;
-    font-weight: 600;
+    width: 48%;
 }
 
 .btn-option.active {
-    background-color: var(--accent-color);
-    color: #1e2b0e;
+    background: var(--accent-color);
+    color: white;
     border-color: var(--accent-color);
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-    .game-area {
-        flex-direction: column;
-        align-items: center;
-    }
+.promotion-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 
-    .board-container {
-        width: 95vw;
-        max-width: 95vw;
-    }
+.btn-promo {
+    padding: 15px;
+    background: #444;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: background 0.2s;
+}
 
-    .sidebar {
-        width: 95vw;
-        max-width: 95vw;
-    }
+.btn-promo:hover {
+    background: var(--accent-color);
 }

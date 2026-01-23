@@ -23,15 +23,26 @@
         </header>
 
         <main class="game-area">
-            <div class="board-container">
-                <div class="player-info top">
-                    <span class="player-name">Đối thủ (Đen)</span>
-                    <div id="time2" class="timer">10:00</div>
+            <div class="board-wrapper">
+                <div id="winRateBar" class="win-rate-bar">
+                    <div id="winRateWhite" class="win-rate-fill" style="height: 50%;"></div>
                 </div>
-                <div id="myBoard" style="width: 100%"></div>
-                <div class="player-info bottom">
-                    <span class="player-name">Bạn (Trắng)</span>
-                    <div id="time1" class="timer">10:00</div>
+                <div class="board-container">
+                    <!-- Move Badge Overlay -->
+                    <div id="moveBadge" class="move-badge hidden">
+                        <div class="badge-icon">??</div>
+                        <div class="badge-text">BLUNDER</div>
+                    </div>
+
+                    <div class="player-info top">
+                        <span class="player-name">Đối thủ (Đen)</span>
+                        <div id="time2" class="timer">10:00</div>
+                    </div>
+                    <div id="myBoard" style="width: 100%"></div>
+                    <div class="player-info bottom">
+                        <span class="player-name">Bạn (Trắng)</span>
+                        <div id="time1" class="timer">10:00</div>
+                    </div>
                 </div>
             </div>
 
@@ -39,6 +50,7 @@
                 <div class="card status-card">
                     <h2>Trạng Thái</h2>
                     <div id="status">Trắng đi trước</div>
+                    <div id="evaluation" class="evaluation-box">Đánh giá: 0.0</div>
                     <div id="pgn"></div>
                 </div>
 
@@ -72,6 +84,7 @@
                     <option value="random">Dễ (Ngẫu nhiên)</option>
                     <option value="medium">Trung Bình (Depth 5)</option>
                     <option value="hard" selected>Khó (Stockfish Depth 15)</option>
+                    <option value="max">Siêu Khó (Stockfish Max)</option>
                 </select>
             </div>
 
@@ -86,6 +99,19 @@
             </div>
 
             <button id="startGameBtn" class="btn btn-primary btn-large">BẮT ĐẦU</button>
+        </div>
+    </div>
+
+    <!-- Promotion Modal -->
+    <div id="promotionModal" class="modal">
+        <div class="modal-content">
+            <h2>Chọn Quân Phong Cấp</h2>
+            <div class="promotion-options">
+                <button onclick="selectPromotion('q')" class="btn-promo">Hậu (Queen)</button>
+                <button onclick="selectPromotion('r')" class="btn-promo">Xe (Rook)</button>
+                <button onclick="selectPromotion('b')" class="btn-promo">Tượng (Bishop)</button>
+                <button onclick="selectPromotion('n')" class="btn-promo">Mã (Knight)</button>
+            </div>
         </div>
     </div>
 
