@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cờ Vua Đỉnh Cao</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- CSS Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Cờ Vua Online</h1>
+        </header>
+
+        <main class="game-area">
+            <div class="board-container">
+                <div class="player-info top">
+                    <span class="player-name">Đối thủ (Đen)</span>
+                    <div id="time2" class="timer">10:00</div>
+                </div>
+                <div id="myBoard" style="width: 100%"></div>
+                <div class="player-info bottom">
+                    <span class="player-name">Bạn (Trắng)</span>
+                    <div id="time1" class="timer">10:00</div>
+                </div>
+            </div>
+
+            <aside class="sidebar">
+                <div class="card status-card">
+                    <h2>Trạng Thái</h2>
+                    <div id="status">Trắng đi trước</div>
+                    <div id="pgn"></div>
+                </div>
+
+                <div class="card controls-card">
+                    <button id="newGameBtn" class="btn btn-primary">Cài Đặt Ván Mới</button>
+                    <button id="flipBtn" class="btn btn-secondary">Xoay Bàn</button>
+                    <div class="difficulty">
+                        <p id="gameParams">Chế độ: ...</p>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Game Setup Modal -->
+    <div id="setupModal" class="modal">
+        <div class="modal-content">
+            <h2>Thiết Lập Ván Đấu</h2>
+
+            <div class="form-group">
+                <label>Chế Độ Chơi:</label>
+                <div class="btn-group" id="modeGroup">
+                    <button class="btn-option active" data-value="pve">Đấu với Máy</button>
+                    <button class="btn-option" data-value="pvp">2 Người Chơi</button>
+                </div>
+            </div>
+
+            <div class="form-group" id="difficultyGroup">
+                <label>Độ Khó (Máy):</label>
+                <select id="difficultySelect">
+                    <option value="random">Dễ (Ngẫu nhiên)</option>
+                    <option value="medium">Trung Bình (Depth 5)</option>
+                    <option value="hard" selected>Khó (Stockfish Depth 15)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Thời Gian (Phút):</label>
+                <select id="timeSelect">
+                    <option value="5">5 phút</option>
+                    <option value="10" selected>10 phút</option>
+                    <option value="30">30 phút</option>
+                    <option value="0">Không giới hạn</option>
+                </select>
+            </div>
+
+            <button id="startGameBtn" class="btn btn-primary btn-large">BẮT ĐẦU</button>
+        </div>
+    </div>
+
+    <!-- JS Libraries -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
