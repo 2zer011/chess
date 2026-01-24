@@ -276,13 +276,13 @@ function classifyMove(currentEvalWhite, prevEvalWhite, movedColor) {
   var type = determineMoveQuality(delta);
 
   var textMap = {
-    'brilliant': 'THIÊN TÀI 🧠',
-    'great': 'TUYỆT VỜI 🔥',
-    'best': 'CHUẨN CMN RỒI ⭐',
-    'good': 'TẠM ĐƯỢC ✅',
-    'inaccuracy': 'HƠI NON 😅',
-    'mistake': 'NGU VÃI 🐔',
-    'blunder': 'XÓA GAME ĐI 🗑️' // Aggressive insults as requested
+    'brilliant': 'HACK VỪA THÔI PA 🤖',
+    'great': 'ĐỈNH KOUT VŨ TRỤ 🌌',
+    'best': 'KHÔN ĐẤY CON TRAI 😏',
+    'good': 'CŨNG TẠM 😒',
+    'inaccuracy': 'NON VÀ XANH LẮM 🍏',
+    'mistake': 'MẮT ĐỂ TRƯNG À? 👀',
+    'blunder': 'NGU HẾT PHẦN THIÊN HẠ 💀' // Ultra aggressive
   };
 
   // Only show badge for significant events
