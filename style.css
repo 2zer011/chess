@@ -137,11 +137,8 @@ header h1 {
 }
 
 .badge-text {
-    font-weight: 800;
-    text-transform: uppercase;
-    font-size: 0.9rem;
-    letter-spacing: 0.5px;
-    color: #eee;
+    display: none !important;
+    /* Hide text as requested, only icon remains */
 }
 
 /* Badge Variations (Chess.com style) */
@@ -207,6 +204,16 @@ header h1 {
 .badge-blunder .badge-icon {
     background: linear-gradient(135deg, #cc3333, #fa412d);
     box-shadow: 0 0 15px #fa412d;
+}
+
+/* Book 📖 - Brown/Blue */
+.badge-book .badge-icon {
+    background: #d08b47;
+}
+
+/* Miss ❌ - Pink/Red */
+.badge-miss .badge-icon {
+    background: #ff5252;
 }
 
 .badge-blunder .badge-text {

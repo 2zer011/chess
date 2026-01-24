@@ -10,6 +10,8 @@ var promotionParams = null; // {source, target}
 var currentEval = 0; // Current stockfish eval (centipawn)
 var prevEval = 0; // State before last move
 var isFirstMove = true; // To skip classification on first move
+var lastMoveTarget = null; // Track the last move target square for badge positioning
+var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 800;
 
 // Timer Variables
 var timeWhite = 0;
@@ -74,7 +76,10 @@ function startGame() {
   // Reset States
   currentEval = 0;
   prevEval = 0;
+  prevEval = 0;
   isFirstMove = true;
+  lastMoveTarget = null;
+  moveCount = 0;
   updateWinRate(0);
 
   // Reset Timer
@@ -179,41 +184,25 @@ stockfish.onmessage = function (event) {
   if (event.data && event.data.startsWith('bestmove')) {
     var bestMove = event.data.split(' ')[1];
 
-    // Determine classification before making the move (Wait, this bestmove is for the BOT's turn usually)
-    // Or if we were analyzing the user's move. 
-    // If it's PVE, we just analyzed the position AFTER user moved? 
-    // Logic: User Moves -> onDrop -> makeAIMove (which calls stockfish).
-    // So Stockfish is analyzing the position AFTER User Moved.
-    // The evaluation "searchEval" found during this search represents the value of the board FOR THE USER's opponent (Bot).
-
-    // Let's refine:
-    // User (White) moves.
-    // Board is now Black to move.
-    // Stockfish analyzes position.
-    // SearchEval is Score for Black.
-
-    // We want to classify White's move.
-    // We compare:
-    // PrevEval (White's perspective, before move)
-    // CurrentEval (White's perspective, after move)
-
-    // SearchEval (Score for Black). 
-    // CurrentEval (White) = -SearchEval.
-
     var finalEvalForActiveSide = searchEval; // This is usually CP for side to move (Black)
     var currentEvalWhite = (game.turn() === 'w') ? finalEvalForActiveSide : -finalEvalForActiveSide;
 
     // Trigger Classification
     if (!isFirstMove) {
-      classifyMove(currentEvalWhite, prevEval, (game.turn() === 'w' ? 'b' : 'w')); // Classify the side that JUST moved
+      // Classify the side that JUST moved (Opponent of current turn)
+      var movedColor = (game.turn() === 'w' ? 'b' : 'w');
+      classifyMove(currentEvalWhite, prevEval, movedColor, lastMoveTarget);
     }
 
     // Set PrevEval for NEXT turn
     prevEval = currentEvalWhite;
     isFirstMove = false;
 
-    // Execute Bot Move
+    // Execute Bot Move if PvE
     if (gameSettings.mode === 'pve' && game.turn() !== 'w') { // Assuming Bot is Black
+      var botMoveTo = bestMove.substring(2, 4);
+      lastMoveTarget = botMoveTo; // Track bot move for badge too
+
       game.move({ from: bestMove.substring(0, 2), to: bestMove.substring(2, 4), promotion: bestMove.substring(4, 5) || 'q' });
       board.position(game.fen());
       checkGameOver();
@@ -237,7 +226,6 @@ stockfish.onmessage = function (event) {
 
       // Display Logic
       var isWhiteTurn = game.turn() === 'w';
-      // Score is for Side to Move.
       var absScore = isWhiteTurn ? score : -score; // Absolute White
 
       var displayScore = (absScore / 100).toFixed(2);
@@ -251,54 +239,89 @@ stockfish.onmessage = function (event) {
   }
 };
 
-function determineMoveQuality(delta) {
-  // Delta = (CurrentEval - PrevEval) from perspective of the player who moved.
-  // If Delta is negative, they lost advantage.
+var moveCount = 0; // Track move count for Book detection
 
-  if (delta > 200) return 'brilliant'; // Gained massive advantage (blunder by opponent?) or tactical find
+function determineMoveQuality(delta, prevEval) {
+  // Opening Book Check (First 10 moves & good move)
+  if (moveCount <= 10 && delta > -30) return 'book';
+
+  // Missed Win: If we had big advantage (>200) and now lost it (delta < -200)
+  // Or if 'bestmove' eval was mate/high positive, but current eval is 0 or negative.
+  // Delta covers this: e.g. Prev +500, Current 0 -> Delta -500 -> Blunder/Miss.
+  // Let's distinguish Miss from Blunder for huge swings.
+  if (prevEval > 300 && delta < -300) return 'miss';
+
+  if (delta > 200) return 'brilliant'; // Gained massive advantage
   if (delta > 50) return 'great';
-  if (delta > -20) return 'best'; // Maintained or slight diff
-  if (delta > -50) return 'good';
-  if (delta > -100) return 'inaccuracy';
+  if (delta > -25) return 'best';
+  if (delta > -75) return 'good';
+  if (delta > -150) return 'inaccuracy';
   if (delta > -300) return 'mistake';
   return 'blunder';
 }
 
-function classifyMove(currentEvalWhite, prevEvalWhite, movedColor) {
-  // We want Delta from perspective of MOVED player.
-  // If White Moved: Delta = CurrentWhite - PrevWhite
-  // If Black Moved: Delta = CurrentBlack - PrevBlack
-  //               = (-CurrentWhite) - (-PrevWhite)
-  //               = PrevWhite - CurrentWhite
+function classifyMove(currentEvalWhite, prevEvalWhite, movedColor, targetSquare) {
+  // Increment move count (approx, since this runs every move)
+  if (movedColor === 'w') moveCount++;
 
   var delta = (movedColor === 'w') ? (currentEvalWhite - prevEvalWhite) : (prevEvalWhite - currentEvalWhite);
 
-  var type = determineMoveQuality(delta);
+  var type = determineMoveQuality(delta, (movedColor === 'w' ? prevEvalWhite : -prevEvalWhite));
 
   var textMap = {
-    'brilliant': 'HACK VỪA THÔI PA 🤖',
-    'great': 'ĐỈNH KOUT VŨ TRỤ 🌌',
-    'best': 'KHÔN ĐẤY CON TRAI 😏',
-    'good': 'CŨNG TẠM 😒',
-    'inaccuracy': 'NON VÀ XANH LẮM 🍏',
-    'mistake': 'MẮT ĐỂ TRƯNG À? 👀',
-    'blunder': 'NGU HẾT PHẦN THIÊN HẠ 💀' // Ultra aggressive
+    'brilliant': 'THIÊN TÀI 🧠',
+    'great': 'TUYỆT VỜI 🔥',
+    'best': 'TỐT NHẤT ⭐',
+    'good': 'TỐT ✅',
+    'book': 'SÁCH GIÁO KHOA 📖',
+    'inaccuracy': 'HƠI NON 😅',
+    'mistake': 'SAI LẦM 🐔',
+    'miss': 'BỎ LỠ ❌',
+    'blunder': 'NGU HẾT PHẦN THIÊN HẠ 💀'
   };
 
-  // Only show badge for significant events
-  if (['brilliant', 'great', 'inaccuracy', 'mistake', 'blunder'].includes(type)) {
-    showMoveBadge(type, textMap[type]);
+  // Show badge for all identified types
+  if (textMap[type]) {
+    showMoveBadge(type, textMap[type], targetSquare);
   }
 }
 
 function updateWinRate(cp) {
-  // Formula: Win% = 50 + 50 * (2 / (1 + exp(-0.00368208 * cp)) - 1)
   var chance = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1);
   $('#winRateWhite').css('height', chance + '%');
 }
 
-function showMoveBadge(type, text) {
+function showMoveBadge(type, text, square) {
   var badge = $('#moveBadge');
+  if (!square) return;
+
+  // Calculate position logic for 8x8 grid
+  var files = 'abcdefgh';
+  var ranks = '87654321'; // From Top to Bottom
+
+  var fileChar = square.charAt(0);
+  var rankChar = square.charAt(1);
+
+  var fileIdx = files.indexOf(fileChar);
+  var rankIdx = ranks.indexOf(rankChar);
+
+  var orientation = board.orientation();
+  var leftPer, topPer;
+
+  // 12.5% per square. Center is +6.25%
+  if (orientation === 'white') {
+    leftPer = (fileIdx * 12.5) + 6.25;
+    topPer = (rankIdx * 12.5) + 6.25;
+  } else {
+    leftPer = ((7 - fileIdx) * 12.5) + 6.25;
+    topPer = ((7 - rankIdx) * 12.5) + 6.25;
+  }
+
+  badge.css({
+    'left': leftPer + '%',
+    'top': topPer + '%'
+  });
+
   var icon = "";
   var className = "move-badge badge-" + type;
 
@@ -307,19 +330,24 @@ function showMoveBadge(type, text) {
     case 'great': icon = "!"; break;
     case 'best': icon = "★"; break;
     case 'good': icon = "✔"; break;
+    case 'book': icon = "📖"; break;
     case 'inaccuracy': icon = "?"; break;
     case 'mistake': icon = "?"; break;
+    case 'miss': icon = "∅"; break;
     case 'blunder': icon = "??"; break;
   }
 
   badge.find('.badge-icon').text(icon);
-  badge.find('.badge-text').text(text);
-  badge.removeClass('hidden').attr('class', className + ' show'); // Reset class then add show
+  // badge.find('.badge-text').text(text); // Hidden in CSS
 
-  // Reset animation
+  // Show insult in Status/Evaluation Box instead
+  $('#evaluation').html(text + '<br><span style="font-size:0.8em; color:#aaa"></span>');
+
+  badge.removeClass('hidden').attr('class', className + ' show');
+
+  // Trigger Reflow for animation
   void badge[0].offsetWidth;
 
-  // Hide after 2s
   setTimeout(function () {
     badge.removeClass('show').addClass('hidden');
   }, 2500);
@@ -330,7 +358,6 @@ function makeAIMove() {
   if (!gameSettings.isGameActive) return;
 
   if (gameSettings.difficulty === 'random') {
-    // Random Move
     var possibleMoves = game.moves();
     if (possibleMoves.length === 0) return;
     var randomIdx = Math.floor(Math.random() * possibleMoves.length);
@@ -338,17 +365,21 @@ function makeAIMove() {
     board.position(game.fen());
     checkGameOver();
     updateStatus();
-
-    // Reset Eval to 0 for random (or unknown)
     prevEval = 0;
   } else {
     // Stockfish Move
-    var depth = 15;
-    if (gameSettings.difficulty === 'medium') depth = 5;
-    if (gameSettings.difficulty === 'max') depth = 20; // Depth 20 is very strong for browser JS
+    var cmd = 'go depth 15';
+
+    if (isMobile) {
+      // Fast but Decent: Depth 12 or 1s time
+      cmd = 'go depth 12'; // Depth 12 is very fast on modern phones (~200ms)
+    } else {
+      if (gameSettings.difficulty === 'max') cmd = 'go depth 18'; // Still strong but faster than 20
+      else if (gameSettings.difficulty === 'medium') cmd = 'go depth 6';
+    }
 
     stockfish.postMessage('position fen ' + game.fen());
-    stockfish.postMessage('go depth ' + depth);
+    stockfish.postMessage(cmd);
   }
 }
 
@@ -357,16 +388,13 @@ function onDragStart(source, piece, position, orientation) {
   if (!gameSettings.isGameActive) return false;
   if (game.game_over()) return false;
 
-  // Logic PvP
   if (gameSettings.mode === 'pvp') {
     if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
       (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
       return false;
     }
   }
-  // Logic PvE
   else {
-    // Chỉ cho cầm quân Trắng
     if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
       (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
       return false;
@@ -376,49 +404,62 @@ function onDragStart(source, piece, position, orientation) {
 }
 
 function onDrop(source, target) {
-  // Check for Promotion (Pawn to last rank)
   var piece = game.get(source);
   if (piece && piece.type === 'p' &&
     ((piece.color === 'w' && target.charAt(1) === '8') ||
       (piece.color === 'b' && target.charAt(1) === '1'))) {
 
-    // Save move params and open modal
     promotionParams = { source: source, target: target };
     $('#promotionModal').css('display', 'flex');
-
-    // Snapback to avoid invalid board state while choosing
     return 'snapback';
   }
 
   var move = game.move({
     from: source,
     to: target,
-    promotion: 'q' // Default to queen if not caught above (fallback)
+    promotion: 'q'
   })
 
   if (move === null) return 'snapback';
 
+  lastMoveTarget = target; // Save for badge
+
   updateStatus();
   checkGameOver();
-  updateTimerDisplay(); // Switch active timer immediately
+  updateTimerDisplay();
 
   // Trigger Analysis to update Win Rate & Classification for THIS move
-  // Even if PVE and Bot is thinking, we want to know if User's move was good.
-  // We send 'go depth 10' quickly? 
-  // Existing Logic: `makeAIMove` calls stockfish. 
-  // If PvE, Bot will think. The analysis during Bot's think time will serve as classification for User's move?
-  // YES. Because Bot analyzes the position resulting from User's move.
-  // The 'score' received is the score of that new position.
+  // Optimize Speed: Use movetime 500ms for quick classification
 
   if (gameSettings.mode === 'pvp') {
-    // If PvP, we need to trigger analysis manually because no bot is "thinking"
     stockfish.postMessage('position fen ' + game.fen());
-    stockfish.postMessage('go depth 15');
+    stockfish.postMessage('go movetime 500'); // 0.5s for PvP analysis
   }
 
-  // Nếu là PvE và game chưa kết thúc -> Bot đi
+  // Nếu là PvE
   if (gameSettings.mode === 'pve' && !game.game_over() && gameSettings.isGameActive) {
-    // Delay chút cho tự nhiên
+    // We rely on the Bot's search to give us the eval for the User's move.
+    // Bot will search DEEP. But we can pick up the 'info' lines early?
+    // Or we can just run a quick analysis BEFORE the bot starts deep thinking?
+    // No, stockfish is single threaded.
+
+    // If we want FAST badges, we might need to rely on the Bot's first few 'info' outputs.
+    // Or, we force a quick search first, THEN bot thinks?
+    // No, Bot needs Depth 20 for strength.
+
+    // Compromise: for Mobile/Fast, we use lower depth overall.
+    // Or we accept the badge appears when Bot finishes thinking.
+    // User said "danh gia qua cham" (too slow).
+
+    // Let's use 'movetime' for Bot too on Mobile?
+    // Or, update Badge continuously as 'info' comes in?
+    // YES. In stockfish.onmessage, we update WinRate. We can also update Badge if confidence is high?
+    // No, Badge determines "Move Quality" which relies on comparing (Prev vs Current).
+    // We can only judge AFTER we have a stable Current.
+
+    // Optimization:
+    // If on Mobile, Limit Bot Time.
+
     window.setTimeout(makeAIMove, 250);
   }
 }
@@ -454,7 +495,6 @@ function updateStatus() {
     }
   }
 
-  // Show "AI thinking" status if needed
   if (gameSettings.mode === 'pve' && game.turn() === 'b' && gameSettings.isGameActive) {
     status += " (Máy đang nghĩ...)";
   }
@@ -477,12 +517,10 @@ var config = {
 }
 board = Chessboard('myBoard', config)
 
-// Initial Status Update
 updateStatus();
 
 $('#flipBtn').on('click', board.flip);
 
-// Function specifically for Promotion Selection
 function selectPromotion(pieceType) {
   if (!promotionParams) return;
 
@@ -498,18 +536,18 @@ function selectPromotion(pieceType) {
     updateStatus();
     updateTimerDisplay();
 
-    // Hide Modal
-    $('#promotionModal').css('display', 'none');
-    promotionParams = null; // Reset
+    lastMoveTarget = promotionParams.target;
 
-    // Trigger AI if needed
+    $('#promotionModal').css('display', 'none');
+    promotionParams = null;
+
     if (gameSettings.mode === 'pve' && !game.game_over() && gameSettings.isGameActive) {
       window.setTimeout(makeAIMove, 250);
     }
-    // If PvP, manual analyze
     else if (gameSettings.mode === 'pvp') {
+      var pvpDepth = isMobile ? 12 : 15;
       stockfish.postMessage('position fen ' + game.fen());
-      stockfish.postMessage('go depth 15');
+      stockfish.postMessage('go depth ' + pvpDepth);
     }
   }
 }
